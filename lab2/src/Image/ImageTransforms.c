@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <math.h>
 
-int (*T1)(Image Dst, Image Src) = sharpen;
-int (*T2)(Image Dst, Image Src) = grayscale;
+int (*T1)(Image Dst, Image Src) = grayscale;
+int (*T2)(Image Dst, Image Src) = edge_detection;
 
 int (*T3)(Image Dst, Image Src) = identity3x3;
 int (*T4)(Image Dst, Image Src) = identity5x5;
@@ -18,13 +18,15 @@ static struct matrix_t edge_kernel_Gy;
 static struct matrix_t identity3x3_kernel;
 static struct matrix_t identity5x5_kernel;
 
+static struct matrix_t edge_detection_kernel;
+
 static __attribute__((constructor)) void construct_kernels() {
   static float __sharpen_kernel[3][3] = {
-    { 0,    0.2,  0  },
-    { 0.2,    0.2, 0.2 },
-    { 0,    0.2,   0  },
+    { 0,    -0.2,  0  },
+    { -0.2,    1, -0.2 },
+    { 0,    -0.2,   0  },
   };
-
+/*
   static float __edge_kernel_Gx[3][3] = {
     { -1, 0, 1 },
     { -2, 0, 2 },
@@ -36,6 +38,19 @@ static __attribute__((constructor)) void construct_kernels() {
     {  0,  0,  0 },
     { -1, -2, -1 },
   };
+*/
+
+  static float __edge_kernel_Gx[3][3] = {
+    { 0, 1, -1 },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+  };
+
+  static float __edge_kernel_Gy[3][3] = {
+    { -1,  0,  0 },
+    {  1,  0,  0 },
+    { 0, 0, 0 },
+  };
 
   static float __identity3x3_kernel[3][3] = {
     { 0, 0, 0 },
@@ -44,11 +59,19 @@ static __attribute__((constructor)) void construct_kernels() {
   };
 
   static float __identity5x5_kernel[5][5] = {
-    { 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0 },
+    { 0, 0, 0,  0, 0 },
+    { 0, 0, 0,  0, 0 },
     { 0, 0, 1, 0, 0 },
-    { 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0 },
+    { 0, 0, 0,  0, 0 },
+    { 0, 0, 0,  0, 0 },
+  };
+
+  static float __edge_detection_kernel[5][5] = {
+    { -0.01, -0.9, -0.9,  -0.9, -0.01 },
+    { -0.01, -0.9, -0.9,  -0.9, -0.01 },
+    { -0.01, -0.9,  13.5, -0.9, -0.01 },
+    { -0.01, -0.9, -0.9,  -0.9, -0.01 },
+    { -0.01, -0.9, -0.9,  -0.9, -0.01 },
   };
 
   static float *__sharpen_kernel_vec[] = {
@@ -75,12 +98,20 @@ static __attribute__((constructor)) void construct_kernels() {
     __identity3x3_kernel[2]
   };
 
-    static float *__identity5x5_kernel_vec[] = {
+  static float *__identity5x5_kernel_vec[] = {
     __identity5x5_kernel[0],
     __identity5x5_kernel[1],
     __identity5x5_kernel[2],
     __identity5x5_kernel[3],
     __identity5x5_kernel[4]
+  };
+
+  static float *__edge_detection_kernel_vec[] = {
+    __edge_detection_kernel[0],
+    __edge_detection_kernel[1],
+    __edge_detection_kernel[2],
+    __edge_detection_kernel[3],
+    __edge_detection_kernel[4]
   };
 
   ROWS(&sharpen_kernel)      = 3;
@@ -102,6 +133,10 @@ static __attribute__((constructor)) void construct_kernels() {
   ROWS(&identity5x5_kernel)        = 5;
   COLUMNS(&identity5x5_kernel)     = 5;
   ELEMENTS(&identity5x5_kernel)    = __identity5x5_kernel_vec;
+
+  ROWS(&edge_detection_kernel)        = 5;
+  COLUMNS(&edge_detection_kernel)     = 5;
+  ELEMENTS(&edge_detection_kernel)    = __edge_detection_kernel_vec;
 }
 
 int sharpen(Image Dst, Image Src) {
@@ -112,7 +147,7 @@ int sharpen(Image Dst, Image Src) {
          return 0;
 }
 
-int edge_detection(Image Dst, Image Src) {
+int edge_detection_old(Image Dst, Image Src) {
   int status = 0;
   int i, j;
   struct image_t X, Y;
@@ -144,6 +179,7 @@ int edge_detection(Image Dst, Image Src) {
       RED(Dst, i, j) = sqrt(pow(RED(&X, i, j), 2) + pow(RED(&Y, i, j), 2));
       GREEN(Dst, i, j) = sqrt(pow(GREEN(&X, i, j), 2) + pow(GREEN(&Y, i, j), 2));
       BLUE(Dst, i, j) = sqrt(pow(BLUE(&X, i, j), 2) + pow(BLUE(&Y, i, j), 2));
+
     }
   }
 
@@ -160,12 +196,20 @@ int identity3x3(Image Dst, Image Src) {
          convolution(&Dst->blue_channel, &Src->blue_channel, &identity3x3_kernel);
 }
 
+int edge_detection(Image Dst, Image Src) {
+  Dst->max_color = Src->max_color;
+  return convolution(&Dst->red_channel, &Src->red_channel, &edge_detection_kernel)     |
+         convolution(&Dst->green_channel, &Src->green_channel, &edge_detection_kernel) |
+         convolution(&Dst->blue_channel, &Src->blue_channel, &edge_detection_kernel);
+}
+
 int identity5x5(Image Dst, Image Src) {
   Dst->max_color = Src->max_color;
   return convolution(&Dst->red_channel, &Src->red_channel, &identity5x5_kernel)     |
          convolution(&Dst->green_channel, &Src->green_channel, &identity5x5_kernel) |
          convolution(&Dst->blue_channel, &Src->blue_channel, &identity5x5_kernel);
 }
+
 
 int grayscale(Image Dst, Image Src) {
   int i, j;
