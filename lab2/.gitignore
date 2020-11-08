@@ -8,8 +8,4 @@ libs/*
 
 bin/*
 
-inputs/*
-
-outputs/*
-
 .clangd/*
