@@ -1,3 +1,15 @@
 compile_commands.json
 
 .cache/*
+
+objs/*
+
+libs/*
+
+bin/*
+
+inputs/*
+
+outputs/*
+
+.clangd/*
