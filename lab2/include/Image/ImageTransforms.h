@@ -3,11 +3,14 @@
 
 #include <Image/Image.h>
 
-int emboss_image(Image Dst, Image Src);
+int sharpen(Image Dst, Image Src);
 int edge_detection(Image Dst, Image Src);
 
 int identity3x3(Image Dst, Image Src);
 int identity5x5(Image Dst, Image Src);
+
+int scale_image(Image Dst, Image Src, float rx, float gx, float bx);
+int grayscale(Image Dst, Image Src);
 
 /*
  * [DEPRECATED]
