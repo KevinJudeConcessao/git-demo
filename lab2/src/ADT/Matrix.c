@@ -1,6 +1,9 @@
 #include <ADT/Matrix.h>
 
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 int matrix_init(Matrix M, uint32_t rows, uint32_t columns) {
   uint32_t i = 0;
@@ -18,9 +21,8 @@ int matrix_init(Matrix M, uint32_t rows, uint32_t columns) {
     if (!M->elements) {
       for (j = 0; j < i; ++j)
         free(M->elements[j]);
-    }
-
-    cleanup_and_return(EALLOC, free(M->elements), free(M));
+      cleanup_and_return(EALLOC, free(M->elements), free(M));
+    }    
   }
 
   return SUCCESS;
@@ -123,7 +125,7 @@ int convolution(Matrix P, Matrix A, Matrix kernel) {
   int mi, mj; // location of the central variable in the kernel
   float sum;
 
-  if (ROWS(kernel) != COLUMNS(kernel) || ROWS(kernel) % 2 != 0 ||
+  if (ROWS(kernel) != COLUMNS(kernel) || ROWS(kernel) % 2 == 0 ||
       ROWS(kernel) > ROWS(A) || COLUMNS(kernel) > COLUMNS(A))
     return ECOMPATCONV;
 
@@ -131,23 +133,23 @@ int convolution(Matrix P, Matrix A, Matrix kernel) {
   matrix_free(P);
   matrix_init(P, ROWS(A), COLUMNS(A));
 
-  mi = mj = (ROWS(P) >> 1) + 1;
+  mi = mj = (ROWS(kernel) >> 1);
 
 #define GET(MATRIX, I, J)                                                      \
-  ((I) < 0 || (I) > (ROWS(MATRIX) - 1) || (J) < 0 ||                           \
-   (J) > (COLUMNS(MATRIX) - 1))                                                \
-      ? 0                                                                      \
-      : (ELEMENT(MATRIX, I, J))
+  (((I) < 0 || (I) > (ROWS(MATRIX) - 1) || (J) < 0 ||                          \
+    (J) > (COLUMNS(MATRIX) - 1))                                               \
+       ? 0                                                                     \
+       : (ELEMENT(MATRIX, I, J)))
 
   for (i = 0; i < ROWS(P); ++i) {
     for (j = 0; j < COLUMNS(P); ++j) {
-
+      ELEMENT(P, i, j) = 0;
       for (ki = 0; ki < ROWS(kernel); ++ki) {
         for (kj = 0; kj < COLUMNS(kernel); ++kj) {
-          ELEMENT(P, i, j) += ELEMENT(kernel, ki, kj) * GET(A, i + ki - mi, j + kj - mj);
+          ELEMENT(P, i, j) += (ELEMENT(kernel, ki, kj) * GET(A, i + ki - mi, j + kj - mj));
         }
-      }        
-    }
+      }   
+    }    
   }
 
   return SUCCESS;
