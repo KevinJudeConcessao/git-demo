@@ -31,11 +31,15 @@ run-a: $(RUNEXE_S) $(addprefix runstatic/,$(INPUTS))
 
 rundyn/%: $(RUNEXE)
 	@echo [RUN]: "\t" $(lastword $(subst /, ,$@))
-	-@./$(RUNEXE) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(lastword $(subst /, ,$@)) -tall
+	-./$(RUNEXE) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(subst .ppm,.t1.ppm ,$(lastword $(subst /, ,$@))) -t1
+	-./$(RUNEXE) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(subst .ppm,.t2.ppm ,$(lastword $(subst /, ,$@))) -t2
+	-./$(RUNEXE) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(subst .ppm,.tall.ppm ,$(lastword $(subst /, ,$@))) -tall
 
 runstatic/%: $(RUNEXE_S)
 	@echo [RUN]: "\t" $(lastword $(subst /, ,$@))
-	-@./$(RUNEXE_S) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(lastword $(subst /, ,$@)) -tall
+	-./$(RUNEXE_S) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(subst .ppm,.t1.ppm ,$(lastword $(subst /, ,$@))) -t1
+	-./$(RUNEXE_S) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(subst .ppm,.t2.ppm ,$(lastword $(subst /, ,$@))) -t2
+	-./$(RUNEXE_S) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(subst .ppm,.tall.ppm ,$(lastword $(subst /, ,$@))) -tall
 
 tests: T1 T2 $(addsuffix -all,$(TESTS))
 
@@ -45,20 +49,20 @@ T2: $(addsuffix -t2,$(TESTS))
 
 test%-all: $(RUNEXE_S) $(TESTEXE) $(TESTDIR)/test%
 	@echo [TEST]: "  " $@
-	-@./$(RUNEXE_S) -i $(TESTDIR)/$(firstword $(subst -, ,$@))/input -o $(TESTDIR)/$(firstword $(subst -, ,$@))/tall -tall
-	-@./$(TESTEXE) $(TESTDIR)/$(firstword $(subst -, ,$@))/tall $(TESTDIR)/$(firstword $(subst -, ,$@))/tall.out
+	-./$(RUNEXE_S) -i $(TESTDIR)/$(firstword $(subst -, ,$@))/input -o $(TESTDIR)/$(firstword $(subst -, ,$@))/tall -tall
+	-./$(TESTEXE) $(TESTDIR)/$(firstword $(subst -, ,$@))/tall $(TESTDIR)/$(firstword $(subst -, ,$@))/tall.out
 	-@rm $(TESTDIR)/$(firstword $(subst -, ,$@))/tall
 
 test%-t1: $(RUNEXE_S) $(TESTEXE) $(TESTDIR)/test%
 	@echo [TEST]: "  " $@
-	-@./$(RUNEXE_S) -i $(TESTDIR)/$(firstword $(subst -, ,$@))/input -o $(TESTDIR)/$(firstword $(subst -, ,$@))/t1 -t1
-	-@./$(TESTEXE) $(TESTDIR)/$(firstword $(subst -, ,$@))/t1 $(TESTDIR)/$(firstword $(subst -, ,$@))/t1.out
+	-./$(RUNEXE_S) -i $(TESTDIR)/$(firstword $(subst -, ,$@))/input -o $(TESTDIR)/$(firstword $(subst -, ,$@))/t1 -t1
+	-./$(TESTEXE) $(TESTDIR)/$(firstword $(subst -, ,$@))/t1 $(TESTDIR)/$(firstword $(subst -, ,$@))/t1.out
 	-@rm $(TESTDIR)/$(firstword $(subst -, ,$@))/t1
 
 test%-t2: $(RUNEXE_S) $(TESTEXE) $(TESTDIR)/test% 
 	@echo [TEST]: "  " $@
-	-@./$(RUNEXE_S) -i $(TESTDIR)/$(firstword $(subst -, ,$@))/input -o $(TESTDIR)/$(firstword $(subst -, ,$@))/t2 -t2
-	-@./$(TESTEXE) $(TESTDIR)/$(firstword $(subst -, ,$@))/t2 $(TESTDIR)/$(firstword $(subst -, ,$@))/t2.out
+	-./$(RUNEXE_S) -i $(TESTDIR)/$(firstword $(subst -, ,$@))/input -o $(TESTDIR)/$(firstword $(subst -, ,$@))/t2 -t2
+	-./$(TESTEXE) $(TESTDIR)/$(firstword $(subst -, ,$@))/t2 $(TESTDIR)/$(firstword $(subst -, ,$@))/t2.out
 	-@rm $(TESTDIR)/$(firstword $(subst -, ,$@))/t2
 
 $(BINDIR)/imagep-dyn: lib-so $(OBJDIR)/imagep.o | $(BINDIR)
