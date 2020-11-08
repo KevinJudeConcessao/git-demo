@@ -31,11 +31,11 @@ run-a: $(RUNEXE_S) $(addprefix runstatic/,$(INPUTS))
 
 rundyn/%: $(RUNEXE)
 	@echo [RUN]: "\t" $(lastword $(subst /, ,$@))
-	-./$(RUNEXE) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(lastword $(subst /, ,$@)) -t2
+	-@./$(RUNEXE) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(lastword $(subst /, ,$@)) -tall
 
 runstatic/%: $(RUNEXE_S)
 	@echo [RUN]: "\t" $(lastword $(subst /, ,$@))
-	-./$(RUNEXE_S) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(lastword $(subst /, ,$@)) -t2
+	-@./$(RUNEXE_S) -i $(INPUTDIR)/$(lastword $(subst /, ,$@)) -o $(OUTPUTDIR)/$(lastword $(subst /, ,$@)) -tall
 
 tests: T1 T2 $(addsuffix -all,$(TESTS))
 
