@@ -19,10 +19,13 @@ int main(int argc, char *argv[]) {
 
   int status;
 
-  if (argc == 1) {
+  if (argc != 3) {
     fprintf(stderr, "Please provide two filepaths !!");
     exit(2);
   }
+
+  first_image_path  = argv[1];
+  second_image_path = argv[2];
 
   first_image_file = fopen(first_image_path, "rb") ;
   if (!first_image_file) {

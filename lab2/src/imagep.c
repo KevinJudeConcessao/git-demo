@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define PRINT(S) puts(S "\n");
+#define PRINT(S) printf(S "\n")
 
 static void usage() {
   PRINT("Usage: ./imagep [OPTIONS]...");
@@ -16,8 +16,8 @@ static void usage() {
   PRINT("   -t1             Run transform T1 on input image file.");
   PRINT("   -t2             Run transform T2 on input image file.");
   PRINT("   -tall           Run transform T1 followed by transform T2 on input");
-  PRINT("                   image file.")
-  PRINT("   -h              Print this help.")
+  PRINT("                   image file.");
+  PRINT("   -h              Print this help."); 
 }
 
 int main(int argc, char *argv[]) {
@@ -35,14 +35,14 @@ int main(int argc, char *argv[]) {
   struct image_t transformed_image;
   int status = 1;
 
-  char **ptr = argv;
+  char **ptr = &argv[1];
 
   if (argc == 1) {
     usage();
     exit(2);
   }
 
-  while (ptr) {
+  while (*ptr) {
     if (! strcmp(*ptr, "-i")) {
       ++ ptr; 
       input_path = *ptr;
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
       usage();
       exit(2);
     } else {
-      fprintf(stderr, "Invalid Argument(s)");
+      fprintf(stderr, "Invalid Argument(s)\n");
       usage();
       exit(2);
     }
