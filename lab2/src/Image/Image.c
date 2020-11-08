@@ -6,6 +6,26 @@
 #include <stdio.h>
 #include <string.h>
 
+int image_alloc(Image I, uint32_t dim_x, uint32_t dim_y, uint16_t max_color) {
+  int status = SUCCESS;
+
+  status = matrix_init(&I->red_channel, dim_x, dim_y);
+  if (!!status)
+    return status;
+
+  status = matrix_init(&I->green_channel, dim_x, dim_y);
+  if (!!status)
+    cleanup_and_return(status, matrix_free(&I->red_channel));
+
+  status = matrix_init(&I->blue_channel, dim_x, dim_y);
+  if (!!status)
+    cleanup_and_return(status, matrix_free(&I->red_channel), matrix_free(&I->green_channel));
+
+  I->max_color = max_color;
+
+  return status;
+}
+
 int image_init(Image I, FILE *ImageFile) {
   char buffer[1024];
   uint32_t i, j;
@@ -21,15 +41,15 @@ int image_init(Image I, FILE *ImageFile) {
     return SUCCESS;
 
   fscanf(ImageFile, "%s", buffer);
-  if (!strncmp((char *)buffer, "P6", 2))
+  if (strncmp((char *)buffer, "P6", 2))
     return ENOIMG;
-
+#if 0
   do {
     if (!fgets(buffer, 1024, ImageFile))
       return ENOIMG;
   } while (!strncmp(buffer, "#", 1));
-
-  if (sscanf(buffer, "%u%u", &columns, &rows) != 2)
+#endif
+  if (fscanf(ImageFile, "%u%u", &rows, &columns) != 2)
     return ENOIMG;
 
   if (fscanf(ImageFile, "%u", &max_value) != 1)
@@ -48,8 +68,8 @@ int image_init(Image I, FILE *ImageFile) {
         fread(pixel8, sizeof(uint8_t), 3, ImageFile);
 
         RED(I, i, j)    = pixel8[0];
-        GREEN(I, i, j)  = pixel8[0];
-        BLUE(I, i, j)   = pixel8[0];
+        GREEN(I, i, j)  = pixel8[1];
+        BLUE(I, i, j)   = pixel8[2];
       }
     }
   } else if (I->max_color == UINT16_MAX) {
@@ -58,8 +78,8 @@ int image_init(Image I, FILE *ImageFile) {
         fread(pixel16, sizeof(uint8_t), 3, ImageFile);
 
         RED(I, i, j)    = pixel16[0];
-        GREEN(I, i, j)  = pixel16[0];
-        BLUE(I, i, j)   = pixel16[0];
+        GREEN(I, i, j)  = pixel16[1];
+        BLUE(I, i, j)   = pixel16[2];
       }
     }
   }
@@ -77,9 +97,9 @@ int image_dump(Image I, FILE *TargetFile) {
   if (MAXCOLOR(I) == UINT8_MAX) {
     for (i = 0; i < DIMX(I); ++i) {
       for (j = 0; j < DIMY(I); ++j) {
-        pixel8[0] = RED(I, i, j);
-        pixel8[1] = GREEN(I, i, j);
-        pixel8[2] = BLUE(I, i, j);
+        pixel8[0] = (uint8_t) (RED(I, i, j));
+        pixel8[1] = (uint8_t) (GREEN(I, i, j));
+        pixel8[2] = (uint8_t) (BLUE(I, i, j));
 
         fwrite(pixel8, sizeof(uint8_t), 3, TargetFile);        
       }
@@ -87,9 +107,9 @@ int image_dump(Image I, FILE *TargetFile) {
   } else if (MAXCOLOR(I) == UINT16_MAX) {
     for (i = 0; i < DIMX(I); ++i) {
       for (j = 0; j < DIMY(I); ++j) {
-        pixel16[0] = RED(I, i, j);
-        pixel16[1] = GREEN(I, i, j);
-        pixel16[2] = BLUE(I, i, j);
+        pixel16[0] = (uint16_t) (RED(I, i, j));
+        pixel16[1] = (uint16_t) (GREEN(I, i, j));
+        pixel16[2] = (uint16_t) (BLUE(I, i, j));
 
         fwrite(pixel16, sizeof(uint16_t), 3, TargetFile);
       }
