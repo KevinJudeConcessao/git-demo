@@ -21,10 +21,12 @@ static struct matrix_t identity5x5_kernel;
 static struct matrix_t edge_detection_kernel;
 
 static __attribute__((constructor)) void construct_kernels() {
-  static float __sharpen_kernel[3][3] = {
-    { 0,    -0.2,  0  },
-    { -0.2,    1, -0.2 },
-    { 0,    -0.2,   0  },
+  static float __sharpen_kernel[5][5] = {
+    { 0, 0, -1, 0, 0  },
+    { 0, -1, 0, -1, 0  },
+    { -1, 0, 8, 0, -1  },
+    { 0, -1, 0, -1, 0  },
+    { 0, 0, -1, 0, 0  },
   };
 /*
   static float __edge_kernel_Gx[3][3] = {
@@ -78,6 +80,8 @@ static __attribute__((constructor)) void construct_kernels() {
     __sharpen_kernel[0],
     __sharpen_kernel[1],
     __sharpen_kernel[2],
+    __sharpen_kernel[3],
+    __sharpen_kernel[4]
   };
 
   static float *__edge_kernel_Gx_vec[] = {
@@ -114,8 +118,8 @@ static __attribute__((constructor)) void construct_kernels() {
     __edge_detection_kernel[4]
   };
 
-  ROWS(&sharpen_kernel)      = 3;
-  COLUMNS(&sharpen_kernel)   = 3;
+  ROWS(&sharpen_kernel)      = 5;
+  COLUMNS(&sharpen_kernel)   = 5;
   ELEMENTS(&sharpen_kernel)  = __sharpen_kernel_vec;
 
   ROWS(&edge_kernel_Gx)     = 3;
@@ -141,10 +145,9 @@ static __attribute__((constructor)) void construct_kernels() {
 
 int sharpen(Image Dst, Image Src) {
   Dst->max_color = Src->max_color;
-  convolution(&Dst->red_channel, &Src->red_channel, &sharpen_kernel) ;
-         convolution(&Dst->green_channel, &Src->green_channel, &sharpen_kernel);
+  return convolution(&Dst->red_channel, &Src->red_channel, &sharpen_kernel)         |     
+         convolution(&Dst->green_channel, &Src->green_channel, &sharpen_kernel)     |
          convolution(&Dst->blue_channel, &Src->blue_channel, &sharpen_kernel);
-         return 0;
 }
 
 int edge_detection_old(Image Dst, Image Src) {
@@ -213,10 +216,16 @@ int identity5x5(Image Dst, Image Src) {
 
 int grayscale(Image Dst, Image Src) {
   int i, j;
-
   float red, green, blue;
+  struct image_t t;
 
-  scale_image(Dst, Src, 0.2126, 0.7152, 0.0722);
+  int status;
+
+  image_init(&t, NULL);
+
+  status = sharpen(&t, Src);
+
+  scale_image(Dst, &t, 0.2126, 0.7152, 0.0722);
 
   for (i = 0; i < DIMX(Dst); ++i) {
     for (j = 0; j < DIMY(Dst); ++j) {
@@ -227,8 +236,8 @@ int grayscale(Image Dst, Image Src) {
       RED(Dst, i, j) = GREEN(Dst, i, j) = BLUE(Dst, i, j) = (red + green + blue)/3;
     }
   } 
-
-  return SUCCESS;
+  
+  cleanup_and_return(status, image_free(&t));
 }
 
 int scale_image(Image Dst, Image Src, float rx, float gx, float bx) {
