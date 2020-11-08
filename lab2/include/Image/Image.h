@@ -26,6 +26,7 @@ typedef struct image_t *Image;
 #define DIMY(IMAGE)         ((IMAGE)->red_channel).columns
 #define MAXCOLOR(IMAGE)     ((IMAGE)->max_color > UINT8_MAX ? UINT16_MAX : UINT8_MAX)
 
+int  image_alloc(Image I, uint32_t dim_x, uint32_t dim_y, uint16_t max_color);
 int  image_init(Image I, FILE *ImageFile);
 int  image_dump(Image I, FILE *TargetFile);
 void image_free(Image I);
