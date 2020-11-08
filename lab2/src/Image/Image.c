@@ -43,13 +43,15 @@ int image_init(Image I, FILE *ImageFile) {
   fscanf(ImageFile, "%s", buffer);
   if (strncmp((char *)buffer, "P6", 2))
     return ENOIMG;
-#if 0
+
+  getc(ImageFile);
+
   do {
     if (!fgets(buffer, 1024, ImageFile))
       return ENOIMG;
   } while (!strncmp(buffer, "#", 1));
-#endif
-  if (fscanf(ImageFile, "%u%u", &rows, &columns) != 2)
+
+  if (sscanf(buffer, "%u %u", &rows, &columns) != 2)
     return ENOIMG;
 
   if (fscanf(ImageFile, "%u", &max_value) != 1)
@@ -97,6 +99,15 @@ int image_dump(Image I, FILE *TargetFile) {
   if (MAXCOLOR(I) == UINT8_MAX) {
     for (i = 0; i < DIMX(I); ++i) {
       for (j = 0; j < DIMY(I); ++j) {
+        RED(I, i, j) = RED(I, i, j) > 255 ? 255 : RED(I, i, j);
+        RED(I, i, j) = RED(I, i, j) < 0 ? 0     : RED(I, i, j);
+
+        GREEN(I, i, j) = GREEN(I, i, j) > 255 ? 255 : GREEN(I, i, j);
+        GREEN(I, i, j) = GREEN(I, i, j) < 0 ? 0     : GREEN(I, i, j);
+
+        BLUE(I, i, j) = BLUE(I, i, j) > 255 ? 255 : BLUE(I, i, j);
+        BLUE(I, i, j) = BLUE(I, i, j) < 0 ? 0     : BLUE(I, i, j);
+
         pixel8[0] = (uint8_t) (RED(I, i, j));
         pixel8[1] = (uint8_t) (GREEN(I, i, j));
         pixel8[2] = (uint8_t) (BLUE(I, i, j));
