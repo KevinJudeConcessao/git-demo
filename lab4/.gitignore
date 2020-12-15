@@ -1,0 +1,7 @@
+*.o
+.cache/*
+*.out
+bin/*
+objs/*
+exp.c
+compile_commands.json
