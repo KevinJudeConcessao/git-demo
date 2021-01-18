@@ -5,9 +5,8 @@
 #include <entities.h>
 
 struct animal_t *animal_new(enum animal_id id, char *name,
-                            void (*action)(struct animal_t *,
-                                           struct subject_t *,
-                                           struct message_t *)) {
+      void (*action)(struct animal_t *, struct subject_t *, struct message_t *)) {
+        
   struct animal_t *self = (struct animal_t *)(malloc(sizeof(struct animal_t)));
   self->id        = id;
   self->state     = READY;
@@ -36,7 +35,7 @@ void animal_dtor(struct animal_t *animal) {
 void animal_set(struct animal_t *animal, enum state_t state, ...) {
   va_list args;
   struct message_t *message = NULL;
-  
+
   va_start(args, state);
 
   animal->state = state;
