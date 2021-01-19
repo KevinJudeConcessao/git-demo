@@ -18,7 +18,7 @@ enum state_t {
 };
 
 enum animal_id {
-  AI_HARE,
+  AI_HARE = 1,
   AI_TURTLE
 };
 
