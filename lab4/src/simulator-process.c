@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 #include <assert.h>
@@ -15,6 +16,8 @@
 #include <sys/msg.h>
 #include <fcntl.h>
 #include <sys/signal.h>
+#include <errno.h>
+
 
 #define DEFAULT_Q 100
 
@@ -295,6 +298,7 @@ static void god_process(unsigned distance, struct timespec *god_step_sleep,
   int random;
   _Bool finished = false;
   int ret = 0;
+  int new_position;
 
   int r1 = rand() % 1000;
   int r2 = rand() % 1000;
@@ -310,9 +314,10 @@ static void god_process(unsigned distance, struct timespec *god_step_sleep,
       else {
         random = rand() % 1000;
         if (random >= r1 && random <= (r1 + 8)) {
-          if (message.state == RUNNING || message.state == SLEEPING)
-            comm_stub_send(to_hare, AI_HARE, message.state,
-                           1 + (rand() % (distance - 2)));
+          if (message.state == RUNNING || message.state == SLEEPING) {
+            new_position = 1 + (rand() % (distance - 2));
+            comm_stub_send(to_hare, AI_HARE, message.state, new_position);
+          }
         }
       }
     }
@@ -325,9 +330,10 @@ static void god_process(unsigned distance, struct timespec *god_step_sleep,
       else {
         random = rand() % 1000;
         if (random >= r2 && random <= (r2 + 8)) {
-          if (message.state == RUNNING || message.state == SLEEPING)
-            comm_stub_send(to_turtle, AI_TURTLE, message.state,
-                           1 + (rand() % (distance - 2)));
+          if (message.state == RUNNING || message.state == SLEEPING) {
+            new_position = 1 + (rand() % (distance - 2));
+            comm_stub_send(to_turtle, AI_TURTLE, message.state, new_position);
+          }            
         }
       }
     }
@@ -373,49 +379,63 @@ void simulator_main(unsigned distance, struct timespec *hare_step_sleep,
   int fd;
   key_t key;
   int i;
-  
-  for (i = 0; i < Q_MAX; ++i) {
-    fd = creat(msg_queues[i], S_IRUSR | S_IWUSR);
-    msq_ids[i] = msgget(ftok(msg_queues[i], getpid()), IPC_CREAT | 0666);
-    close(fd);
-  }
+
+  struct init_msg {
+    long type;
+    char command;
+  } empty = { 1 , 0 };
 
   signal(SIGINT,  do_cleanup);
   signal(SIGTERM, do_cleanup);
   signal(SIGQUIT, do_cleanup);
+  
+  for (i = 0; i < Q_MAX; ++i) {
+    fd = creat(msg_queues[i], S_IRUSR | S_IWUSR);    
+    msq_ids[i] = msgget(ftok(msg_queues[i], getpid()), IPC_CREAT | 0666);
+    close(fd);
+  }
 
   if ((hare_pid = fork()) == 0) {
-    raise(SIGSTOP);
+    msgsnd(msq_ids[TO_GOD], &empty, sizeof(char), 0);
+    msgrcv(msq_ids[TO_HARE], &empty, sizeof(char), 0, 0);
+
     hare_process(distance, delta, hare_step_sleep, msq_ids[TO_HARE],
-                 msq_ids[TO_TURTLE], msq_ids[TO_GOD], msq_ids[TO_REPORTER]);
+                 msq_ids[TO_TURTLE], msq_ids[TO_GOD], msq_ids[TO_REPORTER]); 
     return;
   } 
 
   if ((turtle_pid = fork()) == 0) {
-    raise(SIGSTOP);
+    msgsnd(msq_ids[TO_GOD], &empty, sizeof(char), 0);
+    msgrcv(msq_ids[TO_TURTLE], &empty, sizeof(char), 0, 0);
+    
     turtle_process(distance, turtle_step_sleep, msq_ids[TO_TURTLE],
                    msq_ids[TO_HARE], msq_ids[TO_GOD], msq_ids[TO_REPORTER]);
     return;
   }
 
-  if ((terminal_pid = fork()) == 0) {
-    raise(SIGSTOP);
+  if ((terminal_pid = fork()) == 0) {    
+    msgsnd(msq_ids[TO_GOD], &empty, sizeof(char), 0);
+    msgrcv(msq_ids[TO_REPORTER], &empty, sizeof(char), 0, 0);
+
     terminal_process(distance, msq_ids[TO_REPORTER],
                      min_time(hare_step_sleep, turtle_step_sleep));
     return;
   }
 
-  kill(terminal_pid, SIGCONT);
-  kill(turtle_pid, SIGCONT);
-  kill(hare_pid, SIGCONT);
+  msgrcv(msq_ids[TO_GOD], &empty, sizeof(char), 0, 0);
+  msgrcv(msq_ids[TO_GOD], &empty, sizeof(char), 0, 0);
+  msgrcv(msq_ids[TO_GOD], &empty, sizeof(char), 0, 0);
+
+  msgsnd(msq_ids[TO_REPORTER], &empty, sizeof(char), 0);
+  msgsnd(msq_ids[TO_HARE], &empty, sizeof(char), 0);
+  msgsnd(msq_ids[TO_TURTLE], &empty, sizeof(char), 0);
 
   god_process(distance, max_time(hare_step_sleep, turtle_step_sleep),
               msq_ids[TO_GOD], msq_ids[TO_TURTLE], msq_ids[TO_HARE]);
-
-  waitpid(terminal_pid, NULL, 0);
+  
   waitpid(hare_pid, NULL, 0);
   waitpid(turtle_pid, NULL, 0);
-
+  waitpid(terminal_pid, NULL, 0);
 cleanup:
   do_cleanup(0);
 }
