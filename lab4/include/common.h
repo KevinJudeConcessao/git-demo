@@ -64,6 +64,8 @@ void subject_unregister_observer(struct subject_t *subject, struct observer_t *o
 
 void subject_dtor(struct subject_t *subject);
 
+void debug();
+
 #define subject_impl(subject_ptr) ((subject_ptr)->subject_impl)
 
 #endif // OBSERVER_H
