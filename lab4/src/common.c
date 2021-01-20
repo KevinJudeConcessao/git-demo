@@ -1,5 +1,8 @@
+#include "entities.h"
 #include <list.h>
 #include <common.h>
+#include <execinfo.h>
+#include <unistd.h>
 
 struct closure_t *closure_new(void *data,
                               void (*callback)(void *, void *),
@@ -82,4 +85,20 @@ void subject_dtor(struct subject_t *subject) {
   if (subject)
     list_destructor(subject->observers);
   free(subject);
+}
+
+void debug() {
+  void *fptrs[1024];
+  char **strings = NULL;
+  int size;
+
+  size = backtrace(fptrs, 1024);
+  strings = backtrace_symbols(fptrs, size);
+
+  if (strings) {
+    printf("[%d] Stacktrace:\n", getpid());
+    for (int i = 1; i < size; ++i) {
+      printf ("%s\n", strings[i]);
+    }
+  }
 }
