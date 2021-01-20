@@ -38,7 +38,6 @@ static unsigned int hare_track_y;
 
 static wchar_t *status_messages[] = {
   L"Ready to race 💪 !!",
-  L"Ready to race 💪 !!",
   L"%d km left to complete race. 🏃",
   L"Sleeping 😴💤",
   L"Race Won 🏆 !!",
@@ -92,6 +91,7 @@ struct reporter *reporter_new(unsigned int track_distance,
   int center_x, center_y;
 
   setlocale(LC_ALL, "");
+  
   initscr();
   cbreak();
   noecho();
@@ -205,7 +205,7 @@ void reporter_print_hare_status(struct reporter *reporter, enum state_t state,
     new_progress_cent = PERCENT(new_progress, distance);
 
     if (new_progress_cent == 100) {
-      print_track(reporter->race, TURTLE, turtle_track_y, turtle_track_x, 100);
+      print_track(reporter->race, HARE, hare_track_y, hare_track_x, 100);
       wrefresh(reporter->race);
       reporter_print_hare_status(reporter, WON);
     } 
@@ -219,7 +219,6 @@ void reporter_print_hare_status(struct reporter *reporter, enum state_t state,
       swprintf(running_status_msg, len, status_messages[RUNNING],
                distance - new_progress);
       print_status(reporter->hare_status, running_status_msg);
-
       reporter->hare_state = RUNNING;
     }
 
@@ -320,15 +319,32 @@ void reporter_render_from_queue(struct reporter *reporter) {
 void reporter_wait_key(struct reporter *reporter) {
   wgetch(reporter->race);
 }
-
+/*
+const char *get_state_str(enum state_t state) {
+  switch (state) {
+  case RUNNING:
+    return "RUNNING";
+  case READY:
+    return "READY";
+  case WON:
+    return "WON";
+  case LOST:
+    return "LOST";
+  case SLEEPING:
+    return "SLEEPING";
+  }
+}
+*/
 void reporter_render_message(struct reporter *terminal, struct message_t *message) {
   if (message) {
     switch (message->id) {
       case AI_HARE:
+//        printf("[HARE]:   %s %d\n", get_state_str(message->state), message->position);
         reporter_print_hare_status(terminal, message->state, message->position);
         break;
 
       case AI_TURTLE:
+//        printf("[TURTLE]:   %s %d\n", get_state_str(message->state), message->position);
         reporter_print_turtle_status(terminal, message->state, message->position);
         break;
     };
