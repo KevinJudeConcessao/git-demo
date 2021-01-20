@@ -38,20 +38,9 @@ char *msg_queues[Q_MAX] = {
 
 int msq_ids[Q_MAX] = { 0 };
 
-static void update_turtle(struct animal_t *turtle, struct subject_t *subject,
+static void update_animal(struct animal_t *animal, struct subject_t *subject,
                           struct message_t *message) {
-  enum state_t state = animal_get_state(turtle);
-  if (message->id == AI_TURTLE && (state == RUNNING || state == SLEEPING)) {
-    animal_set(turtle, state, message->position);
-  }
-}
-
-static void update_hare(struct animal_t *hare, struct subject_t *subject,
-                        struct message_t *message) {
-  enum state_t state = animal_get_state(hare);
-  if (message->id == AI_HARE && (state == RUNNING || state == SLEEPING)) {
-    animal_set(hare, state, message->position);
-  }
+  animal_set(animal, message->state, message->position);
 }
 
 static void hare_process(unsigned distance, unsigned delta,
@@ -59,8 +48,8 @@ static void hare_process(unsigned distance, unsigned delta,
                          int to_turtle_msgqid, int to_god_msgqid,
                          int to_terminal_msgqid) {
 
-  struct animal_t *hare = animal_new(AI_HARE, "hare", update_hare);
-  struct animal_t *turtle = animal_new(AI_TURTLE, "turtle", update_turtle);
+  struct animal_t *hare = animal_new(AI_HARE, "hare", update_animal);
+  struct animal_t *turtle = animal_new(AI_TURTLE, "turtle", update_animal);
 
   struct comm_stub_t *god_to_hare       = comm_stub_new(to_hare_msgqid, AI_HARE);
   struct comm_stub_t *turtle_to_hare    = comm_stub_new(to_hare_msgqid, AI_TURTLE);
@@ -96,7 +85,6 @@ static void hare_process(unsigned distance, unsigned delta,
       case RUNNING:
         hare_position += 1;
         ret = comm_stub_receive_notify_last(turtle_to_hare, &message);
-
         turtle_state    = animal_get_state(turtle);
         turtle_position = animal_get_position(turtle);
 
@@ -129,7 +117,7 @@ static void hare_process(unsigned distance, unsigned delta,
 
       case SLEEPING:
         hare_sleep_time = (struct timespec) {
-          .tv_sec   = rand() % 3,
+          .tv_sec   = ((3 * delta) % 100) / 2 + (rand() % 10),
           .tv_nsec  = rand() % (unsigned int)(1e9),
         };
 
@@ -154,8 +142,8 @@ static void turtle_process(unsigned distance, struct timespec *step_sleep,
                            int to_turtle_msgqid, int to_hare_msgqid,
                            int to_god_msgqid, int to_terminal_msgqid) {
 
-  struct animal_t *turtle = animal_new(AI_TURTLE, "turtle", update_turtle);
-  struct animal_t *hare   = animal_new(AI_HARE, "hare", update_hare);
+  struct animal_t *turtle = animal_new(AI_TURTLE, "turtle", update_animal);
+  struct animal_t *hare   = animal_new(AI_HARE, "hare", update_animal);
 
   struct comm_stub_t *god_to_turtle       = comm_stub_new(to_turtle_msgqid, AI_TURTLE);
   struct comm_stub_t *hare_to_turtle      = comm_stub_new(to_turtle_msgqid, AI_HARE);
