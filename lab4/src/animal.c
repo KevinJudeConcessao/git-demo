@@ -51,12 +51,12 @@ void animal_set(struct animal_t *animal, enum state_t state, ...) {
 
     case WON:
     case LOST:
-      break; 
+      break;
   };
 
-  message = new_message(animal->id, animal->state, animal->position);
-
   if (animal->other) {
+
+    message = new_message(animal->id, animal->state, animal->position);
     subject_notify(animal->this, message);
     consume_message(message);
   }
