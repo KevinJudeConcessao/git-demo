@@ -108,7 +108,7 @@ static void hare_process(unsigned distance, unsigned delta,
                 (hare_position == distance)
                     ? WON
                     : (((int)(hare_position) - (int)(turtle_position)) > (int)(delta)
-                           ? SLEEPING /* (rand() % 2 ? RUNNING : SLEEPING) */
+                           ? (rand() % 2 ? RUNNING : SLEEPING)
                            : RUNNING);
             break;
 
@@ -232,7 +232,7 @@ static void turtle_process(unsigned distance, struct timespec *step_sleep,
 
 static void animal_notify(struct animal_t *animal, struct subject_t *subject,
                           struct message_t *message) {
-  animal_set(animal, message->state, animal->position);
+  animal_set(animal, message->state, message->position);
 }
 
 static void terminal_process(unsigned distance, int to_terminal_msgqid,
