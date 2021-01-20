@@ -1,6 +1,6 @@
 INCLUDE_PATH = ./include
-CFLAGS  += -g -I $(INCLUDE_PATH)
-LDFLAGS += -lncursesw 
+CFLAGS  += -g -I $(INCLUDE_PATH) 
+LDFLAGS += -rdynamic -lncursesw 
 PTHREADS_LDFLAGS = -lpthread
 
 LIBDIR 	:= libs
