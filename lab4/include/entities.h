@@ -7,8 +7,6 @@
 #include <pthread.h>
 #include <common.h>
 
-// #define THREADS
-
 enum state_t {
   READY,
   RUNNING,
@@ -140,7 +138,7 @@ void reporter_render_message(struct reporter *terminal, struct message_t *messag
 #ifdef THREADS
   void reporter_issue_command(struct reporter *reporter, struct message_t *message);
   _Bool reporter_has_commands(struct reporter *reporter);
-  void reporter_render_from_queue(struct reporter *reporter);
+  void reporter_render_from_queue(struct reporter *reporter, struct message_t *message);
 #endif
 
 void reporter_wait_key(struct reporter *reporter);
