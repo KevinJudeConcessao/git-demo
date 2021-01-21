@@ -117,7 +117,7 @@ static void hare_process(unsigned distance, unsigned delta,
 
       case SLEEPING:
         hare_sleep_time = (struct timespec) {
-          .tv_sec   = ((3 * delta) % 100) / 2 + (rand() % 10),
+          .tv_sec   = ((delta >> 1) + (rand() % (delta)) + (rand() % 5)),
           .tv_nsec  = rand() % (unsigned int)(1e9),
         };
 
@@ -236,32 +236,27 @@ static void terminal_process(unsigned distance, int to_terminal_msgqid,
   struct reporter *reporter = reporter_new(distance, hare->this, turtle->this);
  
   struct message_t message;
+  int progress = 0;
   _Bool finished = false;
   int ret = 0;
 
   comm_stub_add_to_listener(hare_messages, hare->other);
   comm_stub_add_to_listener(turtle_messages, turtle->other);
 
-  while (!finished) {
+  do {
     ret = comm_stub_receive_notify(hare_messages, &message, false);
     if (ret != -1) {
-      if (message.state == WON) {
-        finished = true;
+      if (message.state == WON)
         animal_set(turtle, LOST);
-      }
     }
-    
-    if (!finished) {
-      ret = comm_stub_receive_notify(turtle_messages, &message, false);
-      if (ret != -1) {
-        if (message.state == WON) {
-          finished = true;
-          animal_set(hare, LOST);
-        }
-      }
+
+    ret = comm_stub_receive_notify(turtle_messages, &message, false);
+    if (ret != -1) {
+      if (message.state == WON)
+        animal_set(hare, LOST);
     }
     nanosleep(step_sleep, NULL);
-  }
+  } while (message.state != LOST);
   
   reporter_wait_key(reporter);
   reporter_dtor(reporter);
