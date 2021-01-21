@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <entities.h>
@@ -61,7 +62,7 @@ static void hare_thread_runner(struct __args *args) {
             hare_state = (hare_position == args->distance)
                              ? WON
                              : (((int)(hare_position) - (int)(turtle_position)) > (int)(args->delta)
-                                    ? SLEEPING /* (rand() % 2 ? RUNNING : SLEEPING) */ 
+                                    ? (rand() % 2 ? RUNNING : SLEEPING)
                                     : RUNNING);
             break;
 
@@ -81,9 +82,10 @@ static void hare_thread_runner(struct __args *args) {
         break;
 
       case SLEEPING:
-        hare_sleep_time = (struct timespec) {
-          .tv_sec   = rand() % 3,
-          .tv_nsec  = rand() % (unsigned int)(1e9),
+        hare_sleep_time = (struct timespec){
+            .tv_sec  =
+                ((args->delta >> 1) + (rand() % (args->delta)) + (rand() % 5)),
+            .tv_nsec = rand() % (unsigned int)(1e9),
         };
         nanosleep(&hare_sleep_time, NULL);
         hare_state = RUNNING;
@@ -172,41 +174,23 @@ static void *turtle_thread_runner(struct __args *args) {
 }
 
 static void *reporter_thread_runner(struct __reporter_thread_args *args) {
-  _Bool finished = false;
-  struct message_t *message = NULL;
-  struct message_t *other_message = NULL;
+  int progress = 0;
+  struct message_t message;
 
   enum animal_id other_id;
   enum state_t   other_state;
 
-  while (!finished) {
+  while (progress != (WON | LOST)) {
     reporter_lock_command(args->terminal);
     if (reporter_has_commands(args->terminal)) {
-      message = (struct message_t *)list_iterator_get_data(
-                    list_begin(args->terminal->command_queue))
-                    .pointer;
-      reporter_render_message(args->terminal, message);
-
-      if (message->state == WON || message->state == LOST) {
-        if (message->state == WON)
-          other_state = LOST;
-        else if (message->state == LOST)
-          other_state = WON;
-
-        if (message->id == AI_TURTLE)
-          other_id = AI_HARE;
-        else if (message->id == AI_HARE)
-          other_id = AI_TURTLE;
-
-        other_message = new_message(other_id, other_state, 0);
-        reporter_render_message(args->terminal, other_message);
-        consume_message(other_message);
-        finished = true;
-      } 
+      reporter_render_from_queue(args->terminal, &message);
+      if (message.state == LOST || message.state == WON)
+        progress |= message.state;
     }
     reporter_unlock_command(args->terminal);
     nanosleep(args->step_sleep, NULL);
   }
+
   pthread_exit(NULL);
 }
 
@@ -221,6 +205,11 @@ void *god_thread_runner(struct __args *args) {
   struct reporter *terminal = args->terminal;
   struct god_t    *god      = args->god;
 
+  srand(getpid());
+
+  int r1 = rand() % 1000;
+  int r2 = rand() % 1000;
+
   while (!finished) {
     god_lock(god);
     hare_state = god_get_hare_state(god);
@@ -228,7 +217,7 @@ void *god_thread_runner(struct __args *args) {
       finished = true;
     else {
       random = rand() % 1000;
-      if (random >= 211 && random <= 218) {
+      if (random >= r1 && random <= (r1 + 8)) {
         if (hare_state == RUNNING || hare_state == SLEEPING) {                  
           animal_lock(hare);
           reporter_lock_command(terminal);  
@@ -251,7 +240,7 @@ void *god_thread_runner(struct __args *args) {
       finished = true;
     else {
       random = rand() % 1000;
-      if (random >= 911 && random <= 918) {
+      if (random >= r2 && random <= (r2 + 8)) {
         if (turtle_state == RUNNING || turtle_state == SLEEPING) {
           animal_lock(turtle);
           reporter_lock_command(terminal);
@@ -298,7 +287,8 @@ void simulator_main(unsigned distance, struct timespec *hare_step_sleep,
     .terminal   = reporter,
     .delta      = delta,
     .distance   = distance,
-    .step_sleep = hare_step_sleep
+    .step_sleep = hare_step_sleep,
+    .god        = god,
   };
 
   struct __args turtle_thread_args = { 
@@ -307,7 +297,8 @@ void simulator_main(unsigned distance, struct timespec *hare_step_sleep,
     .terminal   = reporter,
     .delta      = delta,
     .distance   = distance,
-    .step_sleep = turtle_step_sleep
+    .step_sleep = turtle_step_sleep,
+    .god        = god
   };
 
   struct __reporter_thread_args r_args = {
