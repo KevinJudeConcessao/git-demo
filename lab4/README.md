@@ -7,5 +7,5 @@
 - Use ```--help``` for more details on usage
 
 ### Dependencies:
-- ```ncursesw``` \
+- ```ncursesw``` &nbsp;
   To install ``` sudo apt install libncursesw5-dev ```
