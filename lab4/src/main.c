@@ -14,14 +14,10 @@ static void convert(unsigned speed, struct timespec *step_sleep) {
       (unsigned long)((time_per_km - step_sleep->tv_sec) * 1e9);
 }
 
-void usage() {
+void usage(char *command) {
   setlocale(LC_ALL, "");
   wprintf(L"Usage:" "\n");
-#ifdef THREADS
-  wprintf(L"./sim-threads [distance] [hare-speed] [turtle-speed] [delta]" "\n");
-#else
-  wprintf(L"./sim-process [distance] [hare-speed] [turtle-speed] [delta]" "\n");
-#endif
+  wprintf(L"%s [distance] [hare-speed] [turtle-speed] [delta]" "\n", command);
   wprintf(L"  [distance]        distance in meters" "\n");
   wprintf(L"  [hare-speed]      speed of the hare in ms⁻¹" "\n");
   wprintf(L"  [turtle-speed]    speed of the turtle in ms⁻¹" "\n");
@@ -39,7 +35,7 @@ int main(int argc, char *argv[]) {
   struct timespec turtle_step_sleep;
 
   if (argc != 5) {
-    usage();
+    usage(argv[0]);
     exit(1);
   }
 
