@@ -91,7 +91,7 @@ struct reporter *reporter_new(unsigned int track_distance,
   int center_x, center_y;
 
   setlocale(LC_ALL, "");
-  
+ 
   initscr();
   cbreak();
   noecho();
@@ -303,14 +303,16 @@ _Bool reporter_has_commands(struct reporter *reporter) {
 }
 
 
-void reporter_render_from_queue(struct reporter *reporter) {
-  struct message_t *message;
+void reporter_render_from_queue(struct reporter *reporter, struct message_t *message) {
+  struct message_t *m;
 
   if (reporter_has_commands(reporter)) {
-    message = (struct message_t *)list_iterator_get_data(
-                  list_begin(reporter->command_queue))
-                  .pointer;
-    reporter_render_message(reporter, message);
+    m = (struct message_t *)list_iterator_get_data(
+            list_begin(reporter->command_queue))
+            .pointer;
+    reporter_render_message(reporter, m);
+    if (message)
+      memcpy(message, m, sizeof(struct message_t));
     list_pop_front(reporter->command_queue);
   }
 }
@@ -319,32 +321,15 @@ void reporter_render_from_queue(struct reporter *reporter) {
 void reporter_wait_key(struct reporter *reporter) {
   wgetch(reporter->race);
 }
-/*
-const char *get_state_str(enum state_t state) {
-  switch (state) {
-  case RUNNING:
-    return "RUNNING";
-  case READY:
-    return "READY";
-  case WON:
-    return "WON";
-  case LOST:
-    return "LOST";
-  case SLEEPING:
-    return "SLEEPING";
-  }
-}
-*/
+
 void reporter_render_message(struct reporter *terminal, struct message_t *message) {
   if (message) {
     switch (message->id) {
       case AI_HARE:
-//        printf("[HARE]:   %s %d\n", get_state_str(message->state), message->position);
         reporter_print_hare_status(terminal, message->state, message->position);
         break;
 
       case AI_TURTLE:
-//        printf("[TURTLE]:   %s %d\n", get_state_str(message->state), message->position);
         reporter_print_turtle_status(terminal, message->state, message->position);
         break;
     };
