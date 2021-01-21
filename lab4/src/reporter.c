@@ -38,7 +38,7 @@ static unsigned int hare_track_y;
 
 static wchar_t *status_messages[] = {
   L"Ready to race 💪 !!",
-  L"%d km left to complete race. 🏃",
+  L"%d meters left to complete race. 🏃",
   L"Sleeping 😴💤",
   L"Race Won 🏆 !!",
   L"Race Lost 😓 !!"
